@@ -12,7 +12,7 @@ func init() {
 }
 
 var rootCmd = &cobra.Command{
-	Use:   "hugo",
+	Use:   "aqledger",
 	Short: "aqledger is a tool to get transactions using HBCI and convertig them into ledger",
 	Long:  "aqledger is a tool to get transactions using HBCI and convertig them into ledger",
 	Run: func(cmd *cobra.Command, args []string) {
