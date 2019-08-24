@@ -42,7 +42,7 @@ var fetchCmd = &cobra.Command{
 
 		for _, account := range accountCollection {
 			transactions, _ := aq.Transactions(&account, nil, nil)
-			fmt.Printf("%s", ledger.ParseLedger(transactions))
+			fmt.Printf("%s", ledger.Parse(transactions))
 		}
 	},
 }

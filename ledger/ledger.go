@@ -7,7 +7,7 @@ import (
 	aqb "github.com/umsatz/go-aqbanking"
 )
 
-func ParseLedger(ts []aqb.Transaction) string {
+func Parse(ts []aqb.Transaction) string {
 	var text string
 	for _, t := range ts {
 
