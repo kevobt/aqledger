@@ -12,6 +12,7 @@ import (
 )
 
 var output string
+var account string
 
 var fetchCmd = &cobra.Command{
 	Use:   "fetch",
@@ -29,20 +30,38 @@ var fetchCmd = &cobra.Command{
 			aq.RegisterPin(pin)
 		}
 
-		userCollection, err := aq.Users()
-		if err != nil {
-			log.Fatalf("unable to list users: %v", err)
-		}
-		defer userCollection.Free()
-
 		accountCollection, err := aq.Accounts()
 		if err != nil {
+
 			log.Fatalf("unable to list accounts: %v", err)
 		}
+		accountCollection = filterAccounts(accountCollection, func(a aqb.Account) bool {
+			return a.Name == account
+		})
 
 		for _, account := range accountCollection {
 			transactions, _ := aq.Transactions(&account, nil, nil)
 			fmt.Printf("%s", ledger.Parse(transactions))
 		}
 	},
+}
+
+func init() {
+	fetchCmd.Flags().StringVarP(
+		&account,
+		"account",
+		"a",
+		"",
+		"Transactions will be fetched from this account",
+	)
+}
+
+func filterAccounts(as aqb.AccountCollection, f func(a aqb.Account) bool) aqb.AccountCollection {
+	var asm aqb.AccountCollection
+	for _, a := range as {
+		if f(a) {
+			asm = append(asm, a)
+		}
+	}
+	return asm
 }
