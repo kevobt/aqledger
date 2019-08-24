@@ -18,6 +18,7 @@ var rootCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(fetchCmd)
+	rootCmd.AddCommand(usersCmd)
 	fetchCmd.LocalFlags().StringVarP(&output, "output", "o", "", "output file")
 }
 
