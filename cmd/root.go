@@ -20,7 +20,7 @@ func init() {
 	rootCmd.AddCommand(fetchCmd)
 	rootCmd.AddCommand(usersCmd)
 	rootCmd.AddCommand(accountsCmd)
-	fetchCmd.LocalFlags().StringVarP(&output, "output", "o", "", "output file")
+	fetchCmd.Flags().StringVarP(&output, "output", "o", "", "output file")
 }
 
 // Execute runs the root command
