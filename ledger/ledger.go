@@ -1,6 +1,7 @@
 package ledger
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -15,8 +16,11 @@ func Parse(ts []aqb.Transaction) string {
 		credit := fmt.Sprintf("%f %s", t.Total, t.TotalCurrency)
 		debit := fmt.Sprintf("%f %s", -t.Total, t.TotalCurrency)
 
+		jsonString, _ := json.Marshal(t)
+
 		text += fmt.Sprintf(
-			"%s %s\n     %s  %s\n     %s  %s\n\n",
+			";%s\n%s %s\n     %s  %s\n     %s  %s\n\n",
+			jsonString,
 			date,
 			strings.Join(t.PurposeList, " "),
 			"Assets",
