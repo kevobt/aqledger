@@ -17,6 +17,7 @@ import (
 
 var output string
 var account string
+var rules string
 
 var rootCmd = &cobra.Command{
 	Use:   "aqledger",
