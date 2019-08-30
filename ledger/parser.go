@@ -3,16 +3,20 @@ package ledger
 import (
 	"encoding/json"
 	"fmt"
-	"strings"
+	"regexp"
 
 	"github.com/nikunjy/rules/parser"
 )
 
 func ParseTransactions(ts []Transaction, rules []Rule) ([]byte, error) {
 	var text string
-	from := "Assets"
-	to := "Expenses"
 	for _, t := range ts {
+		// Remove \n from purpose
+		re := regexp.MustCompile("\n")
+		t.Purpose = re.ReplaceAllString(t.Purpose, "")
+
+		from := "Assets"
+		to := "Expenses"
 		for _, rule := range rules {
 			ev, err := parser.NewEvaluator(rule.String)
 			if err != nil {
@@ -39,7 +43,7 @@ func ParseTransactions(ts []Transaction, rules []Rule) ([]byte, error) {
 			";%s\n%s %s\n     %s  %s\n     %s  %s\n\n",
 			jsonString,
 			date,
-			strings.Join(t.PurposeList, " "),
+			t.Purpose,
 			from,
 			credit,
 			to,
