@@ -1,86 +1,86 @@
 package ledger
 
 import (
+	"bufio"
 	"encoding/json"
-	"fmt"
-	"strings"
-
-	"github.com/nikunjy/rules/parser"
-
-	aqb "github.com/umsatz/go-aqbanking"
+	"io"
+	"os"
+	"regexp"
 )
 
-func Parse(ts []aqb.Transaction) string {
-	var rules RulesCollection
-	rules.ReadFromFile("rules")
-
-	var text string
-	from := "Assets"
-	to := "Expenses"
-	for _, t := range ts {
-		for _, rule := range rules.Rules {
-			ev, err := parser.NewEvaluator(rule.String)
-			if err != nil {
-				fmt.Printf("%v", err)
-			}
-			ans, err := ev.Process(transactionToMap(t))
-			if err != nil {
-				fmt.Println(err)
-			}
-			if ans {
-				from = rule.From
-				to = rule.To
-				break
-			}
-		}
-
-		date := t.Date.Format("2006/01/02")
-		credit := fmt.Sprintf("%f %s", -t.Total, t.TotalCurrency)
-		debit := fmt.Sprintf("%f %s", t.Total, t.TotalCurrency)
-
-		jsonString, _ := json.Marshal(t)
-
-		text += fmt.Sprintf(
-			";%s\n%s %s\n     %s  %s\n     %s  %s\n\n",
-			jsonString,
-			date,
-			strings.Join(t.PurposeList, " "),
-			from,
-			credit,
-			to,
-			debit,
-		)
-	}
-	return text
+// A Ledger describes the contents of a ledger file filled with transaction
+// information
+type Ledger struct {
+	Transactions Transactions
 }
 
-func transactionToMap(t aqb.Transaction) map[string]interface{} {
-	type s map[string]interface{}
-	return s{
-		"Purpose":             t.Purpose,
-		"PurposeList":         t.PurposeList,
-		"Text":                t.Text,
-		"Status":              t.Status,
-		"Date":                t.Date,
-		"ValutaDate":          t.ValutaDate,
-		"CustomerReference":   t.CustomerReference,
-		"EndToEndReference":   t.EndToEndReference,
-		"Total":               t.Total,
-		"TotalCurrency":       t.TotalCurrency,
-		"Fee":                 t.Fee,
-		"FeeCurrency":         t.FeeCurrency,
-		"MandateID":           t.MandateID,
-		"BandReference":       t.BandReference,
-		"LocalBankCode":       t.LocalBankCode,
-		"LocalAccountNumber":  t.LocalAccountNumber,
-		"LocalIBAN":           t.LocalIBAN,
-		"LocalBIC":            t.LocalBIC,
-		"LocalName":           t.LocalName,
-		"RemoteBankCode":      t.RemoteBankCode,
-		"RemoteAccountNumber": t.RemoteAccountNumber,
-		"RemoteIBAN":          t.RemoteIBAN,
-		"RemoteBIC":           t.RemoteBIC,
-		"RemoteName":          t.RemoteName,
-		"RemoteNameList":      t.RemoteNameList,
+// AppendTransactions writes (appends) new transaction entries. The parameter rw
+// defines where to write the transactions
+func AppendTransactions(rw io.ReadWriter, ts []Transaction) error {
+	// Read rules from file
+	file, err := os.Open("rules")
+	if err != nil {
+		return err
 	}
+	defer file.Close()
+	rules, err := ReadRules(file)
+	if err != nil {
+		return err
+	}
+
+	ledger, err := Read(rw)
+	if err != nil {
+		return err
+	}
+
+	b, err := ParseTransactions(ledger.Transactions.Distinct(ts), rules)
+	if err != nil {
+		return err
+	}
+	rw.Write(b)
+
+	return nil
+}
+
+// Read reads aqledger transactions from an ledger stream
+func Read(r io.Reader) (file Ledger, err error) {
+	s := bufio.NewScanner(r)
+	s.Split(scanTransactionLine)
+	for s.Scan() {
+		var t Transaction
+		err = json.Unmarshal(s.Bytes(), &t)
+		if err != nil {
+			return
+		}
+		file.Transactions = append(file.Transactions, t)
+	}
+
+	return
+}
+
+// scanTransactionLine is a split method that looks for lines that contain
+// transaction information
+func scanTransactionLine(data []byte, atEOF bool) (advance int, token []byte, err error) {
+	if atEOF && len(data) == 0 {
+		return 0, nil, nil
+	}
+
+	// Complile regular expression that expresses a transaction entry in a byte
+	// source
+	reg, err := regexp.Compile(";{.*}")
+	if err != nil {
+		return
+	}
+
+	// Find a transaction in data
+	loc := reg.FindIndex(data)
+	if loc != nil {
+		return loc[1], data[loc[0]:loc[1]], nil
+	}
+
+	if atEOF {
+		return len(data), data, nil
+	}
+
+	return
 }

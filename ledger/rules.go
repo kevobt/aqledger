@@ -3,48 +3,42 @@ package ledger
 import (
 	"bufio"
 	"bytes"
-	"os"
+	"io"
 	"strings"
 )
 
+// Rule represents a condition that, if satisfied, indicates where money flows
 type Rule struct {
 	String string
 	From   string
 	To     string
 }
 
-type RulesCollection struct {
-	Rules []Rule
-}
+// ReadRules reads rules from a reader. A rule consists of three lines.
+// 1. Rule expression
+// 2. Source account
+// 3. Target account
+// This means, if a transaction satisfies a condition the money flows from the
+// source account to the target account. Multiple rules are separated by a blank
+// line.
+func ReadRules(r io.Reader) (rules []Rule, err error) {
+	rulesScanner := bufio.NewScanner(r)
+	rulesScanner.Split(scanEmptyLine)
 
-func (r *RulesCollection) ReadFromFile(filename string) error {
-	f, _ := os.Open(filename)
-	defer f.Close()
-
-	scn := bufio.NewScanner(f)
-	scn.Split(scanEmptyLine)
-
-	var lines [][]byte
-
-	for scn.Scan() {
-		lines = append(lines, scn.Bytes())
-	}
-
-	for _, line := range lines {
-		s := bufio.NewScanner(bytes.NewReader(line))
-		var l []string
-		for s.Scan() {
-			l = append(l, s.Text())
+	for rulesScanner.Scan() {
+		linesScanner := bufio.NewScanner(bytes.NewReader(rulesScanner.Bytes()))
+		var lines []string
+		for linesScanner.Scan() {
+			lines = append(lines, linesScanner.Text())
 		}
-
-		r.Rules = append(r.Rules, Rule{
-			String: l[0],
-			From:   l[1],
-			To:     l[2],
+		rules = append(rules, Rule{
+			String: lines[0],
+			From:   lines[1],
+			To:     lines[2],
 		})
 	}
 
-	return nil
+	return rules, nil
 }
 
 func scanEmptyLine(data []byte, atEOF bool) (advance int, token []byte, err error) {
@@ -59,5 +53,6 @@ func scanEmptyLine(data []byte, atEOF bool) (advance int, token []byte, err erro
 	if atEOF {
 		return len(data), data, nil
 	}
+
 	return
 }
