@@ -63,9 +63,9 @@ var rootCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.AddCommand(usersCmd)
-	rootCmd.AddCommand(accountsCmd)
-	rootCmd.AddCommand(transactionsCmd)
+	//rootCmd.AddCommand(usersCmd)
+	//rootCmd.AddCommand(accountsCmd)
+	//rootCmd.Args
 	rootCmd.Flags().StringVarP(&output, "output", "o", "", "output file")
 }
 
