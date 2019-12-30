@@ -14,7 +14,6 @@ import (
 )
 
 var output string
-var account string
 var rules string
 
 var rootCmd = &cobra.Command{
@@ -22,6 +21,11 @@ var rootCmd = &cobra.Command{
 	Short: "aqledger is a tool to get transactions using HBCI and convertig them into ledger",
 	Long:  "aqledger is a tool to get transactions using HBCI and convertig them into ledger",
 	Run: func(cmd *cobra.Command, args []string) {
+		if len(args) == 0 {
+			fmt.Println("You have to provide an account")
+			fmt.Println("You can use the command  \"aqledger accounts\" to list your accounts ")
+			os.Exit(1)
+		}
 		aq, err := aqb.DefaultAQBanking()
 		if err != nil {
 			fmt.Println(err)
@@ -38,7 +42,7 @@ var rootCmd = &cobra.Command{
 			log.Fatalf("unable to list accounts: %v", err)
 		}
 		accountCollection = filterAccounts(accountCollection, func(a aqb.Account) bool {
-			return a.Name == account
+			return a.Name == args[0]
 		})
 
 		for _, account := range accountCollection {
@@ -63,13 +67,6 @@ func init() {
 	rootCmd.AddCommand(accountsCmd)
 	rootCmd.AddCommand(transactionsCmd)
 	rootCmd.Flags().StringVarP(&output, "output", "o", "", "output file")
-	rootCmd.Flags().StringVarP(
-		&account,
-		"account",
-		"a",
-		"",
-		"Transactions will be fetched from this account",
-	)
 }
 
 // Execute runs the root command
