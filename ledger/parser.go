@@ -20,7 +20,8 @@ func ParseTransactions(ts []Transaction, rules []Rule) ([]byte, error) {
 		for _, rule := range rules {
 			ev, err := parser.NewEvaluator(rule.String)
 			if err != nil {
-				fmt.Printf("%v", err)
+				fmt.Println("There might be some mistake in the rules definition")
+				fmt.Println(err)
 			}
 			ans, err := ev.Process(t.Map())
 			if err != nil {
@@ -33,22 +34,21 @@ func ParseTransactions(ts []Transaction, rules []Rule) ([]byte, error) {
 			}
 		}
 
-		date := t.Date.Format("2006/01/02")
-		credit := fmt.Sprintf("%f %s", -t.Total, t.TotalCurrency)
-		debit := fmt.Sprintf("%f %s", t.Total, t.TotalCurrency)
+		credit := fmt.Sprintf("%0.2f %s", t.Total, t.TotalCurrency)
 
 		jsonString, _ := json.Marshal(t)
 
 		text += fmt.Sprintf(
 			";%s\n%s %s\n     %s  %s\n     %s  %s\n\n",
 			jsonString,
-			date,
+			t.Date,
 			t.Purpose,
 			from,
 			credit,
 			to,
-			debit,
+			"",
 		)
 	}
+
 	return []byte(text), nil
 }
