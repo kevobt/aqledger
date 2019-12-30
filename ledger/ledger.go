@@ -23,6 +23,7 @@ func AppendTransactions(rw io.ReadWriter, ts []Transaction) error {
 		return err
 	}
 	defer file.Close()
+
 	rules, err := ReadRules(file)
 	if err != nil {
 		return err
@@ -37,6 +38,7 @@ func AppendTransactions(rw io.ReadWriter, ts []Transaction) error {
 	if err != nil {
 		return err
 	}
+
 	rw.Write(b)
 
 	return nil
@@ -75,12 +77,9 @@ func scanTransactionLine(data []byte, atEOF bool) (advance int, token []byte, er
 	// Find a transaction in data
 	loc := reg.FindIndex(data)
 	if loc != nil {
-		return loc[1], data[loc[0]:loc[1]], nil
+		return loc[1], data[loc[0]+1 : loc[1]], nil
 	}
 
-	if atEOF {
-		return len(data), data, nil
-	}
-
-	return
+	// No entry found. Return
+	return 0, nil, nil
 }
