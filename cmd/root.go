@@ -35,7 +35,7 @@ var rootCmd = &cobra.Command{
 			rs := []ledger.Rule{}
 			if rules != "" {
 				// Read rules from file
-				file, err := os.Open("rules")
+				file, err := os.Open(rules)
 				if err != nil {
 					fmt.Println(err)
 					os.Exit(1)
