@@ -12,6 +12,7 @@ import (
 
 var output string
 var rules string
+var strict bool
 
 var rootCmd = &cobra.Command{
 	Use:   "aqledger",
@@ -47,7 +48,7 @@ var rootCmd = &cobra.Command{
 					os.Exit(1)
 				}
 			}
-			writeTransactionsToFile(output, transactions, rs)
+			writeTransactionsToFile(output, transactions, rs, strict)
 		} else {
 			printTransactions(transactions)
 		}
@@ -60,6 +61,13 @@ func init() {
 	//rootCmd.Args
 	rootCmd.Flags().StringVarP(&output, "output", "o", "", "output file")
 	rootCmd.Flags().StringVarP(&rules, "rules", "r", "", "rules file")
+	rootCmd.Flags().BoolVarP(
+		&strict,
+		"strict",
+		"s",
+		false,
+		"Transactions that are not covered by rules are omitted",
+	)
 }
 
 // Execute runs the root command
@@ -70,7 +78,7 @@ func Execute() {
 	}
 }
 
-func writeTransactionsToFile(filename string, ts ledger.Transactions, rs []ledger.Rule) {
+func writeTransactionsToFile(filename string, ts ledger.Transactions, rs []ledger.Rule, strict bool) {
 	if _, err := os.Stat(filename); os.IsNotExist(err) {
 		ioutil.WriteFile(filename, []byte(""), 0644)
 	}
@@ -82,7 +90,7 @@ func writeTransactionsToFile(filename string, ts ledger.Transactions, rs []ledge
 	}
 	defer f.Close()
 
-	err = ledger.AppendTransactions(f, ts, rs)
+	err = ledger.AppendTransactions(f, ts, rs, strict)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)

@@ -3,13 +3,16 @@ package ledger
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"regexp"
 
 	"github.com/nikunjy/rules/parser"
 )
 
-func ParseTransactions(ts []Transaction, rules []Rule) ([]byte, error) {
+func ParseTransactions(ts []Transaction, rules []Rule, strict bool) ([]byte, error) {
 	var text string
+	uncategorized := []Transaction{}
+
 	for _, t := range ts {
 		// Remove \n from purpose
 		re := regexp.MustCompile("\n")
@@ -17,6 +20,8 @@ func ParseTransactions(ts []Transaction, rules []Rule) ([]byte, error) {
 
 		from := "Assets"
 		to := "Expenses"
+
+		categorized := false
 		for _, rule := range rules {
 			ev, err := parser.NewEvaluator(rule.String)
 			if err != nil {
@@ -30,8 +35,14 @@ func ParseTransactions(ts []Transaction, rules []Rule) ([]byte, error) {
 			if ans {
 				from = rule.From
 				to = rule.To
+				categorized = true
 				break
 			}
+		}
+
+		if strict && !categorized {
+			uncategorized = append(uncategorized, t)
+			continue
 		}
 
 		credit := fmt.Sprintf("%0.2f %s", t.Total, t.TotalCurrency)
@@ -48,6 +59,19 @@ func ParseTransactions(ts []Transaction, rules []Rule) ([]byte, error) {
 			to,
 			"",
 		)
+	}
+
+	if len(uncategorized) > 0 {
+		fmt.Println("Strict mode enabled. The following transactions could not be categorized:")
+
+		for _, t := range uncategorized {
+			data, err := json.MarshalIndent(t, "", "  ")
+			if err != nil {
+				fmt.Println(err)
+				os.Exit(1)
+			}
+			fmt.Printf("%s\n", data)
+		}
 	}
 
 	return []byte(text), nil

@@ -15,13 +15,13 @@ type Ledger struct {
 
 // AppendTransactions writes (appends) new transaction entries. The parameter rw
 // defines where to write the transactions
-func AppendTransactions(rw io.ReadWriter, ts []Transaction, rs []Rule) error {
+func AppendTransactions(rw io.ReadWriter, ts []Transaction, rs []Rule, strict bool) error {
 	ledger, err := Read(rw)
 	if err != nil {
 		return err
 	}
 
-	b, err := ParseTransactions(ledger.Transactions.Distinct(ts), rs)
+	b, err := ParseTransactions(ledger.Transactions.Distinct(ts), rs, strict)
 	if err != nil {
 		return err
 	}
