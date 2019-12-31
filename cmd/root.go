@@ -32,7 +32,22 @@ var rootCmd = &cobra.Command{
 		}
 
 		if output != "" {
-			writeTransactionsToFile(output, transactions)
+			rs := []ledger.Rule{}
+			if rules != "" {
+				// Read rules from file
+				file, err := os.Open("rules")
+				if err != nil {
+					fmt.Println(err)
+					os.Exit(1)
+				}
+				defer file.Close()
+				rs, err = ledger.ReadRules(file)
+				if err != nil {
+					fmt.Println(err)
+					os.Exit(1)
+				}
+			}
+			writeTransactionsToFile(output, transactions, rs)
 		} else {
 			printTransactions(transactions)
 		}
@@ -44,6 +59,7 @@ func init() {
 	//rootCmd.AddCommand(accountsCmd)
 	//rootCmd.Args
 	rootCmd.Flags().StringVarP(&output, "output", "o", "", "output file")
+	rootCmd.Flags().StringVarP(&rules, "rules", "r", "", "rules file")
 }
 
 // Execute runs the root command
@@ -54,7 +70,7 @@ func Execute() {
 	}
 }
 
-func writeTransactionsToFile(filename string, ts ledger.Transactions) {
+func writeTransactionsToFile(filename string, ts ledger.Transactions, rs []ledger.Rule) {
 	if _, err := os.Stat(filename); os.IsNotExist(err) {
 		ioutil.WriteFile(filename, []byte(""), 0644)
 	}
@@ -66,7 +82,7 @@ func writeTransactionsToFile(filename string, ts ledger.Transactions) {
 	}
 	defer f.Close()
 
-	err = ledger.AppendTransactions(f, ts)
+	err = ledger.AppendTransactions(f, ts, rs)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
