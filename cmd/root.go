@@ -11,6 +11,7 @@ import (
 )
 
 var output string
+var file string
 var rules string
 var strict bool
 
@@ -19,14 +20,25 @@ var rootCmd = &cobra.Command{
 	Short: "aqledger is a tool to get transactions using HBCI and convertig them into ledger",
 	Long:  "aqledger is a tool to get transactions using HBCI and convertig them into ledger",
 	Run: func(cmd *cobra.Command, args []string) {
-		if len(args) == 0 {
+		var data []byte
+
+		if file != "" {
+			d, err := ioutil.ReadFile(file)
+			if err != nil {
+				fmt.Println(err)
+				os.Exit(1)
+			}
+			data = d
+		} else if len(args) == 0 {
 			fmt.Println("You have to provide transactions")
 			os.Exit(1)
+		} else {
+			data = []byte(args[0])
 		}
 
 		var transactions ledger.Transactions
 
-		err := json.Unmarshal([]byte(args[0]), &transactions)
+		err := json.Unmarshal(data, &transactions)
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
@@ -56,14 +68,13 @@ var rootCmd = &cobra.Command{
 }
 
 func init() {
-	//rootCmd.AddCommand(usersCmd)
-	//rootCmd.AddCommand(accountsCmd)
-	//rootCmd.Args
 	rootCmd.Flags().StringVarP(&output, "output", "o", "", "output file")
+	rootCmd.Flags().StringVarP(&file, "file", "f", "", "input file")
 	rootCmd.Flags().StringVarP(&rules, "rules", "r", "", "rules file")
 	rootCmd.Flags().BoolVarP(
 		&strict,
 		"strict",
+	//rootCmd.Args
 		"s",
 		false,
 		"Transactions that are not covered by rules are omitted",
